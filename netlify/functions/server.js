@@ -49,7 +49,14 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
+// Debug middleware to log all requests
+app.use((req, res, next) => {
+  console.log(`${req.method} ${req.path} - Headers:`, JSON.stringify(req.headers, null, 2));
+  next();
+});
+
 // API routes (adjusted for Netlify redirects)
+// When /api/v1/auth/login is redirected, it becomes v1/auth/login
 app.use('/v1/auth', authRoutes);
 app.use('/v1/tasks', taskRoutes);
 
@@ -86,6 +93,21 @@ app.get('/v1/health', async (req, res) => {
       }
     });
   }
+});
+
+// Catch-all route for debugging
+app.use('*', (req, res) => {
+  console.log('Catch-all route hit:', req.method, req.originalUrl, req.path);
+  res.status(404).json({
+    status: 'error',
+    message: 'Route not found',
+    debug: {
+      method: req.method,
+      originalUrl: req.originalUrl,
+      path: req.path,
+      baseUrl: req.baseUrl
+    }
+  });
 });
 
 // Error handling middleware
