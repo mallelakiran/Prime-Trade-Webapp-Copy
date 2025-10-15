@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 // Create axios instance
 const api = axios.create({
   baseURL: process.env.NODE_ENV === 'production' 
-    ? '/.netlify/functions/simple-auth' 
+    ? '/api/v1' 
     : 'http://localhost:5000/api/v1',
   timeout: 10000,
   headers: {

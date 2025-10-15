@@ -95,25 +95,106 @@ app.use(errorHandler);
 // Initialize database
 let dbInitialized = false;
 
+// In-memory fallback users for serverless environment
+const fallbackUsers = [
+  {
+    id: 1,
+    username: 'admin',
+    email: 'admin@primetrade.ai',
+    password: '$2a$12$LQv3c1yqBWVHxkd0LHAkCOYz6TtxMQJqhN8/LewdBPj3bp.Gm.F5W', // Admin123
+    role: 'admin',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 2,
+    username: 'user',
+    email: 'user@primetrade.ai', 
+    password: '$2a$12$92IXUNpkjO0rOQ5byMi.Ye4oKoEa3Ro9llC/.og/at2.uheWG/igi', // User123
+    role: 'user',
+    created_at: new Date().toISOString()
+  }
+];
+
+// Override User model methods for serverless environment
+const User = require('../../src/models/userModel');
+const bcrypt = require('bcryptjs');
+
+User.findByEmail = async (email) => {
+  return fallbackUsers.find(u => u.email === email) || null;
+};
+
+User.validatePassword = async (plainPassword, hashedPassword) => {
+  return await bcrypt.compare(plainPassword, hashedPassword);
+};
+
+User.findById = async (id) => {
+  const user = fallbackUsers.find(u => u.id === parseInt(id));
+  if (user) {
+    const { password, ...userWithoutPassword } = user;
+    return userWithoutPassword;
+  }
+  return null;
+};
+
+// Simple task store for demo
+const fallbackTasks = [
+  {
+    id: 1,
+    title: 'Complete project documentation',
+    description: 'Write comprehensive documentation for the task management system',
+    status: 'in_progress',
+    priority: 'high',
+    user_id: 1,
+    username: 'admin',
+    created_at: new Date().toISOString()
+  },
+  {
+    id: 2,
+    title: 'Review code quality',
+    description: 'Perform code review and ensure best practices are followed',
+    status: 'pending',
+    priority: 'medium',
+    user_id: 1,
+    username: 'admin',
+    created_at: new Date().toISOString()
+  }
+];
+
+// Add a simple tasks endpoint
+app.get('/v1/tasks', (req, res) => {
+  res.json({
+    status: 'success',
+    message: 'Tasks retrieved successfully',
+    data: {
+      tasks: fallbackTasks,
+      total: fallbackTasks.length
+    }
+  });
+});
+
+app.get('/v1/tasks/stats', (req, res) => {
+  const stats = {
+    total: fallbackTasks.length,
+    pending: fallbackTasks.filter(t => t.status === 'pending').length,
+    in_progress: fallbackTasks.filter(t => t.status === 'in_progress').length,
+    completed: fallbackTasks.filter(t => t.status === 'completed').length
+  };
+  
+  res.json({
+    status: 'success',
+    message: 'Task statistics retrieved successfully',
+    data: { stats }
+  });
+});
+
 const initializeApp = async () => {
   if (!dbInitialized) {
     try {
-      console.log('🔄 Initializing database...');
-      console.log('DB_PATH:', process.env.DB_PATH);
-      
-      await initializeDatabase();
-      console.log('✅ Database tables created');
-      
-      await seedDatabase();
-      console.log('✅ Database seeded');
-      
+      console.log('🔄 Using in-memory user store for serverless environment');
+      console.log('✅ Fallback users loaded:', fallbackUsers.length);
       dbInitialized = true;
-      console.log('✅ Database initialization complete');
     } catch (error) {
-      console.error('❌ Failed to initialize database:', error);
-      console.error('Error details:', error.message);
-      console.error('Stack trace:', error.stack);
-      // Don't throw the error, let the function continue
+      console.error('❌ Failed to initialize:', error);
     }
   }
 };

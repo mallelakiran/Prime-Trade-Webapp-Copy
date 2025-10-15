@@ -52,7 +52,7 @@ exports.handler = async (event, context) => {
     
     console.log('Request:', method, path);
     
-    if (method === 'POST' && path === '/login') {
+    if (method === 'POST' && (path === '/login' || path === '/auth/login')) {
       const { email, password } = JSON.parse(event.body);
       
       console.log('Login attempt for:', email);
@@ -103,6 +103,65 @@ exports.handler = async (event, context) => {
           }
         })
       };
+    }
+    
+    if (method === 'GET' && (path === '/auth/profile' || path === '/profile')) {
+      // Extract token from Authorization header
+      const authHeader = event.headers.authorization || event.headers.Authorization;
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        return {
+          statusCode: 401,
+          headers,
+          body: JSON.stringify({
+            status: 'error',
+            message: 'No token provided'
+          })
+        };
+      }
+      
+      try {
+        const token = authHeader.substring(7);
+        const jwt = require('jsonwebtoken');
+        const decoded = jwt.verify(token, process.env.JWT_SECRET || 'your_super_secret_jwt_key_here_change_in_production');
+        
+        const user = users.find(u => u.id === decoded.id);
+        if (!user) {
+          return {
+            statusCode: 401,
+            headers,
+            body: JSON.stringify({
+              status: 'error',
+              message: 'User not found'
+            })
+          };
+        }
+        
+        return {
+          statusCode: 200,
+          headers,
+          body: JSON.stringify({
+            status: 'success',
+            message: 'Profile retrieved successfully',
+            data: {
+              user: {
+                id: user.id,
+                username: user.username,
+                email: user.email,
+                role: user.role
+              }
+            }
+          })
+        };
+      } catch (error) {
+        return {
+          statusCode: 401,
+          headers,
+          body: JSON.stringify({
+            status: 'error',
+            message: 'Invalid token'
+          })
+        };
+      }
     }
     
     if (method === 'GET' && path === '/health') {
