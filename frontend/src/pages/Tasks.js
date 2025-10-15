@@ -32,22 +32,6 @@ const Tasks = () => {
     priority: 'medium'
   });
 
-  useEffect(() => {
-    fetchTasks();
-  }, [statusFilter, priorityFilter, fetchTasks]);
-
-  useEffect(() => {
-    const delayedSearch = setTimeout(() => {
-      if (searchTerm) {
-        searchTasks();
-      } else {
-        fetchTasks();
-      }
-    }, 300);
-
-    return () => clearTimeout(delayedSearch);
-  }, [searchTerm, fetchTasks, searchTasks]);
-
   const fetchTasks = useCallback(async () => {
     try {
       setLoading(true);
@@ -81,6 +65,22 @@ const Tasks = () => {
       setLoading(false);
     }
   }, [searchTerm, statusFilter, priorityFilter]);
+
+  useEffect(() => {
+    fetchTasks();
+  }, [statusFilter, priorityFilter, fetchTasks]);
+
+  useEffect(() => {
+    const delayedSearch = setTimeout(() => {
+      if (searchTerm) {
+        searchTasks();
+      } else {
+        fetchTasks();
+      }
+    }, 300);
+
+    return () => clearTimeout(delayedSearch);
+  }, [searchTerm, fetchTasks, searchTasks]);
 
   const handleCreateTask = async (e) => {
     e.preventDefault();
