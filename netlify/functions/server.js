@@ -57,13 +57,35 @@ app.use('/v1/tasks', taskRoutes);
 swaggerSetup(app);
 
 // Health check endpoint
-app.get('/v1/health', (req, res) => {
-  res.status(200).json({
-    status: 'success',
-    message: 'Server is running',
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV
-  });
+app.get('/v1/health', async (req, res) => {
+  try {
+    const { getRow } = require('../../src/config/database');
+    const userCount = await getRow('SELECT COUNT(*) as count FROM users');
+    
+    res.status(200).json({
+      status: 'success',
+      message: 'Server is running',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+      database: {
+        initialized: dbInitialized,
+        userCount: userCount?.count || 0,
+        dbPath: process.env.DB_PATH
+      }
+    });
+  } catch (error) {
+    res.status(200).json({
+      status: 'success',
+      message: 'Server is running',
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV,
+      database: {
+        initialized: dbInitialized,
+        error: error.message,
+        dbPath: process.env.DB_PATH
+      }
+    });
+  }
 });
 
 // Error handling middleware
@@ -76,12 +98,22 @@ let dbInitialized = false;
 const initializeApp = async () => {
   if (!dbInitialized) {
     try {
+      console.log('🔄 Initializing database...');
+      console.log('DB_PATH:', process.env.DB_PATH);
+      
       await initializeDatabase();
+      console.log('✅ Database tables created');
+      
       await seedDatabase();
+      console.log('✅ Database seeded');
+      
       dbInitialized = true;
-      console.log('✅ Database initialized and seeded for serverless function');
+      console.log('✅ Database initialization complete');
     } catch (error) {
       console.error('❌ Failed to initialize database:', error);
+      console.error('Error details:', error.message);
+      console.error('Stack trace:', error.stack);
+      // Don't throw the error, let the function continue
     }
   }
 };
