@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useAuth } from '../contexts/AuthContext';
 import { taskService } from '../services/taskService';
 import { 
@@ -16,7 +16,7 @@ import Modal from '../components/UI/Modal';
 import toast from 'react-hot-toast';
 
 const Tasks = () => {
-  const { user, isAdmin } = useAuth();
+  const { isAdmin } = useAuth();
   const [tasks, setTasks] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchTerm, setSearchTerm] = useState('');
@@ -34,7 +34,7 @@ const Tasks = () => {
 
   useEffect(() => {
     fetchTasks();
-  }, [statusFilter, priorityFilter]);
+  }, [statusFilter, priorityFilter, fetchTasks]);
 
   useEffect(() => {
     const delayedSearch = setTimeout(() => {
@@ -46,9 +46,9 @@ const Tasks = () => {
     }, 300);
 
     return () => clearTimeout(delayedSearch);
-  }, [searchTerm]);
+  }, [searchTerm, fetchTasks, searchTasks]);
 
-  const fetchTasks = async () => {
+  const fetchTasks = useCallback(async () => {
     try {
       setLoading(true);
       const params = {};
@@ -63,9 +63,9 @@ const Tasks = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [statusFilter, priorityFilter]);
 
-  const searchTasks = async () => {
+  const searchTasks = useCallback(async () => {
     try {
       setLoading(true);
       const params = {};
@@ -80,7 +80,7 @@ const Tasks = () => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [searchTerm, statusFilter, priorityFilter]);
 
   const handleCreateTask = async (e) => {
     e.preventDefault();

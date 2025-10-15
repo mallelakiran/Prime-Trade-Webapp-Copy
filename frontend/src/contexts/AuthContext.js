@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback } from 'react';
 import api from '../services/api';
 import toast from 'react-hot-toast';
 
@@ -25,9 +25,16 @@ export const AuthProvider = ({ children }) => {
     } else {
       setLoading(false);
     }
+  }, [fetchProfile]);
+
+  const logout = useCallback(() => {
+    localStorage.removeItem('token');
+    delete api.defaults.headers.common['Authorization'];
+    setUser(null);
+    toast.success('Logged out successfully');
   }, []);
 
-  const fetchProfile = async () => {
+  const fetchProfile = useCallback(async () => {
     try {
       const response = await api.get('/auth/profile');
       setUser(response.data.data.user);
@@ -37,7 +44,7 @@ export const AuthProvider = ({ children }) => {
     } finally {
       setLoading(false);
     }
-  };
+  }, [logout]);
 
   const login = async (email, password) => {
     try {
@@ -82,12 +89,6 @@ export const AuthProvider = ({ children }) => {
     }
   };
 
-  const logout = () => {
-    localStorage.removeItem('token');
-    delete api.defaults.headers.common['Authorization'];
-    setUser(null);
-    toast.success('Logged out successfully');
-  };
 
   const updateProfile = async (userData) => {
     try {
