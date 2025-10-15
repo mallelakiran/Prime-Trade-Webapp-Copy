@@ -14,6 +14,7 @@ process.env.DB_PATH = process.env.DB_PATH || '/tmp/primetrade.db';
 
 const { initializeDatabase } = require('../../src/config/database');
 const { errorHandler, notFound } = require('../../src/middleware/errorMiddleware');
+const { seedDatabase } = require('../../src/utils/seedDatabase');
 
 // Import routes
 const authRoutes = require('../../src/routes/authRoutes');
@@ -48,15 +49,15 @@ app.use(morgan('combined'));
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true }));
 
-// API routes
-app.use('/api/v1/auth', authRoutes);
-app.use('/api/v1/tasks', taskRoutes);
+// API routes (adjusted for Netlify redirects)
+app.use('/v1/auth', authRoutes);
+app.use('/v1/tasks', taskRoutes);
 
 // Swagger documentation
 swaggerSetup(app);
 
 // Health check endpoint
-app.get('/api/v1/health', (req, res) => {
+app.get('/v1/health', (req, res) => {
   res.status(200).json({
     status: 'success',
     message: 'Server is running',
@@ -76,8 +77,9 @@ const initializeApp = async () => {
   if (!dbInitialized) {
     try {
       await initializeDatabase();
+      await seedDatabase();
       dbInitialized = true;
-      console.log('✅ Database initialized for serverless function');
+      console.log('✅ Database initialized and seeded for serverless function');
     } catch (error) {
       console.error('❌ Failed to initialize database:', error);
     }
