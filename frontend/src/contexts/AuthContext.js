@@ -16,17 +16,6 @@ export const AuthProvider = ({ children }) => {
   const [user, setUser] = useState(null);
   const [loading, setLoading] = useState(true);
 
-  // Check if user is logged in on app start
-  useEffect(() => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
-      fetchProfile();
-    } else {
-      setLoading(false);
-    }
-  }, [fetchProfile]);
-
   const logout = useCallback(() => {
     localStorage.removeItem('token');
     delete api.defaults.headers.common['Authorization'];
@@ -45,6 +34,17 @@ export const AuthProvider = ({ children }) => {
       setLoading(false);
     }
   }, [logout]);
+
+  // Check if user is logged in on app start
+  useEffect(() => {
+    const token = localStorage.getItem('token');
+    if (token) {
+      api.defaults.headers.common['Authorization'] = `Bearer ${token}`;
+      fetchProfile();
+    } else {
+      setLoading(false);
+    }
+  }, [fetchProfile]);
 
   const login = async (email, password) => {
     try {
